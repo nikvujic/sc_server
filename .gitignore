@@ -2,3 +2,4 @@ venv/
 .vscode/
 __pycache__/
 __init__.pyc
+sc_server/tmp/base.db
