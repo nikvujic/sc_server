@@ -8,30 +8,51 @@ class Racun(db.Model):
     datum = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     korisnikID = db.Column(db.Integer, db.ForeignKey('korisnik.id'), nullable=False)
     zaposleniID = db.Column(db.Integer, db.ForeignKey('zaposleni.id'), nullable=False)
+    proizvodi = db.relationship("Stavke_Racuna", back_populates="racun")
 
     def __repr__(self):
         return f"Racun('{self.sto}', '{self.datum}')"
 
-sastojci_proizvoda = db.Table('sastojci_proizvoda',
-    db.Column('sastojak_id', db.Integer, db.ForeignKey('sastojak.id')),
-    db.Column('proizvod_id', db.Integer, db.ForeignKey('proizvod.id'))
-)
+class Proizvod(db.Model):
+    __table_args__ = {'extend_existing': True} 
+    id = db.Column(db.Integer, primary_key=True)
+    naziv = db.Column(db.String(50), unique=True, nullable=False)
+    cena = db.Column(db.Float, nullable=False)
+    tip = db.Column(db.String(25), nullable=False)
+    slika = db.Column(db.String(20), nullable=True)
+    racuni = db.relationship("Stavke_Racuna", back_populates="proizvod")
+    sastojci = db.relationship("Sastojci_Proizvoda", back_populates="proizvod")
 
-stavke_racuna = db.Table('stavke_racuna',
-    db.Column('proizvod_id', db.Integer, db.ForeignKey('proizvod.id')),
-    db.Column('racun_id', db.Integer, db.ForeignKey('racun.id'))
-)
+    def __repr__(self):
+        return f"Proizvod('{self.naziv}', '{self.cena}', '{self.tip}')"
+
+class Sastojci_Proizvoda(db.Model):
+    __table_args__ = {'extend_existing': True} 
+    __tablename__ = 'sastojci_proizvoda'
+    sastojak_id = db.Column(db.Integer, db.ForeignKey('sastojak.id'), primary_key=True)
+    proizvod_id = db.Column(db.Integer, db.ForeignKey('proizvod.id'), primary_key=True)
+    kolicina = db.Column(db.Integer, nullable=False, default=1)
+    sastojak = db.relationship("Sastojak", back_populates='proizvodi')
+    proizvod = db.relationship("Proizvod", back_populates='sastojci')
+
+class Stavke_Racuna(db.Model):
+    __table_args__ = {'extend_existing': True} 
+    __tablename__ = 'stavke_racuna'
+    proizvod_id = db.Column(db.Integer, db.ForeignKey('proizvod.id'), primary_key=True)
+    racun_id = db.Column(db.Integer, db.ForeignKey('racun.id'), primary_key=True)
+    kolicina = db.Column(db.Integer, nullable=False, default=1)
+    proizvod = db.relationship("Proizvod", back_populates='racuni')
+    racun = db.relationship("Racun", back_populates='proizvodi')
 
 class Sastojak(db.Model):
     __table_args__ = {'extend_existing': True} 
     id = db.Column(db.Integer, primary_key=True)
     naziv = db.Column(db.String(50), unique=True, nullable=False)
-    kolicina = db.Column(db.Integer, nullable=False)
     jedinica = db.Column(db.String(20), nullable=False)
-    u_proizvodima = db.relationship('Proizvod', secondary=sastojci_proizvoda, backref=db.backref('sastojci', lazy='dynamic'))
+    proizvodi = db.relationship("Sastojci_Proizvoda", back_populates="sastojak")
 
     def __repr__(self):
-        return f"Sastojak('{self.naziv}', '{self.kolicina}', '{self.jedinica}')"
+        return f"Sastojak('{self.naziv}', '{self.jedinica}')"
 
 class Korisnik(db.Model):
     __table_args__ = {'extend_existing': True} 
@@ -54,15 +75,3 @@ class Zaposleni(db.Model):
 
     def __repr__(self):
         return f"Zaposleni('{self.ime}', '{self.prezime}', '{self.JMBG}', '{self.admin}')"
-
-class Proizvod(db.Model):
-    __table_args__ = {'extend_existing': True} 
-    id = db.Column(db.Integer, primary_key=True)
-    naziv = db.Column(db.String(50), unique=True, nullable=False)
-    cena = db.Column(db.Float, nullable=False)
-    tip = db.Column(db.String(25), nullable=False)
-    slika = db.Column(db.String(20), nullable=True)
-    na_racunima = db.relationship('Racun', secondary=stavke_racuna, backref=db.backref('proizvodi', lazy='dynamic'))
-
-    def __repr__(self):
-        return f"Proizvod('{self.naziv}', '{self.cena}', '{self.tip}')"
