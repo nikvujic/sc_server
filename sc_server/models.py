@@ -26,6 +26,7 @@ class Proizvod(db.Model):
     def __repr__(self):
         return f"Proizvod('{self.naziv}', '{self.cena}', '{self.tip}')"
 
+# ovo je tabela asocijacije
 class Sastojci_Proizvoda(db.Model):
     __table_args__ = {'extend_existing': True} 
     __tablename__ = 'sastojci_proizvoda'
@@ -35,6 +36,7 @@ class Sastojci_Proizvoda(db.Model):
     sastojak = db.relationship("Sastojak", back_populates='proizvodi')
     proizvod = db.relationship("Proizvod", back_populates='sastojci')
 
+# ovo je tabela asocijacije
 class Stavke_Racuna(db.Model):
     __table_args__ = {'extend_existing': True} 
     __tablename__ = 'stavke_racuna'
