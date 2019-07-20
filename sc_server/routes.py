@@ -100,5 +100,49 @@ def delete_zaposleni(JMBG):
     db.session.delete(zaposleni)
     db.session.commit()
 
-    return jsonify({'poruka':f'zaposleni <{ime} {prezime}> obrisan!'})
+    return jsonify({'poruka':f'Zaposleni <{ime} {prezime}> obrisan!'})
 
+@app.route('/korisnik', methods=['GET'])
+def get_all_korisnici():
+    lista_korisnika = Korisnik.query.all()
+    korisnici = []
+
+    for korisnik in lista_korisnika:
+       current_korisnik = {}
+       current_korisnik['email'] = korisnik.email
+       korisnici.append(current_korisnik)
+
+    return jsonify({'korisnici':korisnici})
+
+@app.route('/korisnik', methods=['POST'])
+def create_korisnik():
+    data = request.get_json()
+    k_email = data['email']
+    k_lozinka = data['lozinka']
+    
+    lista_korisnika = Korisnik.query.all()
+
+    new_korisnik = Korisnik(email=k_email, lozinka=k_lozinka)
+
+    for korisnik in lista_korisnika:
+        if korisnik.email == k_email:
+            return jsonify({'poruka':f'Email vec postoji!'}), 409
+    
+    db.session.add(new_korisnik)
+    db.session.commit()
+
+    return jsonify({'poruka':f'Korisnik <{k_email}> uspesno kreiran!'})
+
+@app.route('/korisnik/<email>', methods=['DELETE'])
+def delete_korisnik(email):
+    korisnik = Korisnik.query.filter_by(email=email).first()
+
+    if not korisnik:
+        return jsonify({'poruka':'Brisanje neuspesno!'}), 409
+
+    email = korisnik.email
+
+    db.session.delete(korisnik)
+    db.session.commit()
+
+    return jsonify({'poruka':f'Korisnik <{email}> obrisan!'})
