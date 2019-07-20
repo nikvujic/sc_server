@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from sc_server import app, db
-from sc_server.models import Sastojak, Zaposleni, Korisnik
+from sc_server.models import Sastojak, Zaposleni, Korisnik, Proizvod
 
 @app.route('/sastojak', methods=['GET'])
 def get_all_sastojci():
@@ -146,3 +146,28 @@ def delete_korisnik(email):
     db.session.commit()
 
     return jsonify({'poruka':f'Korisnik <{email}> obrisan!'})
+
+@app.route('/proizvod', methods=['GET'])
+def get_all_proizvodi():
+    lista_proizvoda = Proizvod.query.all()
+    proizvodi = []
+    
+    for proizvod in lista_proizvoda:
+        current_proizvod = {}
+        current_proizvod['naziv'] = proizvod.naziv
+        current_proizvod['cena'] = proizvod.cena
+        current_proizvod['tip'] = proizvod.tip
+        current_proizvod['slika'] = proizvod.slika
+        current_proizvod['sastojci'] = []
+
+        for asoc in proizvod.sastojci:
+            current_sastojak = {}
+            current_sastojak['naziv'] = asoc.sastojak.naziv
+            current_sastojak['jedinica'] = asoc.sastojak.jedinica
+            current_sastojak['kolicina'] = asoc.kolicina
+
+            current_proizvod['sastojci'].append(current_sastojak)
+        
+        proizvodi.append(current_proizvod)
+
+    return jsonify({'proizvodi':proizvodi})
