@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from sc_server import app, db
-from sc_server.models import Sastojak, Zaposleni
+from sc_server.models import Sastojak, Zaposleni, Korisnik
 
 @app.route('/sastojak', methods=['GET'])
 def get_all_sastojci():
@@ -22,9 +22,9 @@ def create_sastojak():
     s_jedinica = data['jedinica']
 
     lista_sastojaka = Sastojak.query.all()
-
+    
     for sastojak in lista_sastojaka:
-        if (sastojak.naziv == s_naziv and sastojak.jedinica == s_jedinica):
+        if sastojak.naziv == s_naziv:
             return jsonify({'poruka':f'Sastojak vec postoji!'}), 409
 
     new_sastojak = Sastojak(naziv=s_naziv, jedinica=s_jedinica)
@@ -34,9 +34,9 @@ def create_sastojak():
 
     return jsonify({'poruka':f'Sastojak <{s_naziv}> uspesno kreiran!'})
 
-@app.route('/sastojak/<id>', methods=['DELETE'])
-def delete_sastojak(id):
-    sastojak = Sastojak.query.filter_by(id=id).first()
+@app.route('/sastojak/<naziv>', methods=['DELETE'])
+def delete_sastojak(naziv):
+    sastojak = Sastojak.query.filter_by(naziv=naziv).first()
 
     if not sastojak:
         return jsonify({'poruka':'Sastojak nije pronadjen!'}), 409
@@ -101,3 +101,4 @@ def delete_zaposleni(JMBG):
     db.session.commit()
 
     return jsonify({'poruka':f'zaposleni <{ime} {prezime}> obrisan!'})
+

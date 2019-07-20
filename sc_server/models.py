@@ -49,7 +49,7 @@ class Stavke_Racuna(db.Model):
 class Sastojak(db.Model):
     __table_args__ = {'extend_existing': True} 
     id = db.Column(db.Integer, primary_key=True)
-    naziv = db.Column(db.String(50), nullable=False)
+    naziv = db.Column(db.String(50), unique=True, nullable=False)
     jedinica = db.Column(db.String(20), nullable=False)
     proizvodi = db.relationship("Sastojci_Proizvoda", back_populates="sastojak")
 
