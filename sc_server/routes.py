@@ -1,6 +1,7 @@
 from flask import request, jsonify
 from sc_server import app, db
 from sc_server.models import Sastojak, Zaposleni, Korisnik, Proizvod
+from werkzeug.security import generate_password_hash
 
 @app.route('/sastojak', methods=['GET'])
 def get_all_sastojci():
@@ -121,8 +122,9 @@ def create_korisnik():
     k_lozinka = data['lozinka']
     
     lista_korisnika = Korisnik.query.all()
+    hash_pass = generate_password_hash(k_lozinka, method='sha256')
 
-    new_korisnik = Korisnik(email=k_email, lozinka=k_lozinka)
+    new_korisnik = Korisnik(email=k_email, lozinka=hash_pass)
 
     for korisnik in lista_korisnika:
         if korisnik.email == k_email:
@@ -171,3 +173,4 @@ def get_all_proizvodi():
         proizvodi.append(current_proizvod)
 
     return jsonify({'proizvodi':proizvodi})
+
