@@ -21,7 +21,7 @@ class Proizvod(db.Model):
     tip = db.Column(db.String(25), nullable=False)
     slika = db.Column(db.String(20), nullable=True)
     racuni = db.relationship("Stavke_Racuna", back_populates="proizvod")
-    sastojci = db.relationship("Sastojci_Proizvoda", back_populates="proizvod")
+    sastojci = db.relationship("Sastojci_Proizvoda", back_populates="proizvod", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"Proizvod('{self.naziv}', '{self.cena}', '{self.tip}')"

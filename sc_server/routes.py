@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from sc_server import app, db
-from sc_server.models import Sastojak, Zaposleni, Korisnik, Proizvod
+from sc_server.models import Sastojak, Zaposleni, Korisnik, Proizvod, Sastojci_Proizvoda
 from werkzeug.security import generate_password_hash
 
 @app.route('/sastojak', methods=['GET'])
@@ -174,3 +174,39 @@ def get_all_proizvodi():
 
     return jsonify({'proizvodi':proizvodi})
 
+@app.route('/proizvod', methods=['POST'])
+def create_proizod():
+    data = request.get_json()
+    p_naziv = data['naziv']
+    p_cena = data['cena']
+    p_tip = data['tip']
+    p_sastojci = data['sastojci']
+
+    proizvod = Proizvod(naziv=p_naziv, cena=p_cena, tip=p_tip)
+
+    for item in p_sastojci:
+        current_sastojak = Sastojak.query.filter_by(naziv=item['naziv']).first()
+        asoc = Sastojci_Proizvoda(kolicina=item['kolicina'])
+        asoc.sastojak = current_sastojak
+        proizvod.sastojci.append(asoc)
+
+    db.session.add(proizvod)
+    db.session.commit()
+
+    return jsonify({'poruka':f'Proizvod <{p_naziv}> uspesno kreiran!'})
+    
+@app.route('/proizvod/<naziv>', methods=['DELETE'])
+def delete_proizvod(naziv):
+    proizvod = Proizvod.query.filter_by(naziv=naziv).first()
+
+    if not proizvod:
+        return jsonify({'poruka':'Brisanje neuspesno!'}), 409
+
+    naziv = proizvod.naziv
+
+    proizvod.sastojci.clear()
+
+    db.session.delete(proizvod)
+    db.session.commit()
+
+    return jsonify({'poruka':f'Proizvod <{naziv}> obrisan!'})
