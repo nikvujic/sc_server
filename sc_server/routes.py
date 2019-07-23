@@ -1,7 +1,9 @@
 from flask import request, jsonify
 from sc_server import app, db
-from sc_server.models import Sastojak, Zaposleni, Korisnik, Proizvod, Sastojci_Proizvoda
+from sc_server.models import (Sastojak, Zaposleni, Korisnik,
+    Proizvod, Sastojci_Proizvoda, Racun, Stavke_Racuna)
 from werkzeug.security import generate_password_hash
+import uuid
 
 @app.route('/sastojak', methods=['GET'])
 def get_all_sastojci():
@@ -195,6 +197,7 @@ def create_proizod():
 
     return jsonify({'poruka':f'Proizvod <{p_naziv}> uspesno kreiran!'})
     
+
 @app.route('/proizvod/<naziv>', methods=['DELETE'])
 def delete_proizvod(naziv):
     proizvod = Proizvod.query.filter_by(naziv=naziv).first()
@@ -210,3 +213,64 @@ def delete_proizvod(naziv):
     db.session.commit()
 
     return jsonify({'poruka':f'Proizvod <{naziv}> obrisan!'})
+
+@app.route('/racun', methods=['GET'])
+def get_all_racuni():
+    lista_racuna = Racun.query.all()
+    racuni = []
+    
+    for racun in lista_racuna:
+        current_racun = {}
+        current_racun['sto'] = racun.sto
+        current_racun['public_id'] = racun.public_id
+        current_racun['korisnikID'] = racun.korisnikID
+        current_racun['zaposleniID'] = racun.zaposleniID
+        current_racun['datum'] = racun.datum
+        current_racun['proizvodi'] = []
+
+        for asoc in racun.proizvodi:
+            current_proizvod = {}
+            current_proizvod['naziv'] = asoc.proizvod.naziv
+            current_proizvod['kolicina'] = asoc.kolicina
+            current_proizvod['cena'] = asoc.proizvod.cena
+
+            current_racun['proizvodi'].append(current_proizvod)
+        
+        racuni.append(current_racun)
+
+    return jsonify({'racuni':racuni})
+
+@app.route('/racun', methods=['POST'])
+def create_racun():
+    data = request.get_json()
+    r_sto = data['sto']
+    r_zaposleni = data['zaposleni']
+    r_korisnik = data['korisnik']
+    r_proizvodi = data['proizvodi']
+
+    racun = Racun(sto=r_sto, public_id=str(uuid.uuid4()), korisnikID=r_korisnik, zaposleniID=r_zaposleni)
+
+    for item in r_proizvodi:
+        current_proizvod = Proizvod.query.filter_by(naziv=item['naziv']).first()
+        asoc = Stavke_Racuna(kolicina = item['kolicina'])
+        asoc.proizvod = current_proizvod
+        racun.proizvodi.append(asoc)
+
+    db.session.add(racun)
+    db.session.commit()
+
+    return jsonify({'poruka':f'Racun uspesno kreiran!'})
+
+@app.route('/racun/<public_id>', methods=['DELETE'])
+def delete_racun(public_id):
+    racun = Racun.query.filter_by(public_id=public_id).first()
+
+    if not racun:
+        return jsonify({'poruka':'Brisanje neuspesno!'}), 409
+    
+    racun.proizvodi.clear()
+
+    db.session.delete(racun)
+    db.session.commit()
+
+    return jsonify({'poruka':f'Racun obrisan!'})
