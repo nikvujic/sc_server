@@ -72,9 +72,10 @@ class Zaposleni(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ime = db.Column(db.String(30), nullable=False)
     prezime = db.Column(db.String(30), nullable=False)
+    lozinka = db.Column(db.String(60), nullable=False)
     JMBG = db.Column(db.String(20), unique=True, nullable=False)
     admin = db.Column(db.Boolean, nullable=False, default=False)
     racuni = db.relationship('Racun', backref='naplatio', lazy=True)
 
     def __repr__(self):
-        return f"Zaposleni('{self.ime}', '{self.prezime}', '{self.JMBG}', '{self.admin}')"
+        return f"Zaposleni('{self.ime}', '{self.prezime}', '{self.lozinka}', '{self.JMBG}', '{self.admin}')"

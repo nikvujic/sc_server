@@ -71,13 +71,17 @@ def create_zaposleni():
     data = request.get_json()
     z_ime = data['ime']
     z_prezime = data['prezime']
+    z_lozinka = data['lozinka']
     z_JMBG = data['JMBG']
+
+
+    hash_pass = generate_password_hash(z_lozinka, method='sha256')
     
     try:
         z_admin = data['admin']
-        new_zaposleni = Zaposleni(ime=z_ime, prezime=z_prezime, JMBG=z_JMBG, admin=z_admin) 
+        new_zaposleni = Zaposleni(ime=z_ime, prezime=z_prezime, lozinka=hash_pass, JMBG=z_JMBG, admin=z_admin) 
     except:
-        new_zaposleni = Zaposleni(ime=z_ime, prezime=z_prezime, JMBG=z_JMBG)
+        new_zaposleni = Zaposleni(ime=z_ime, prezime=z_prezime, lozinka=hash_pass, JMBG=z_JMBG)
 
     lista_zaposlenih = Zaposleni.query.all()
 
