@@ -105,6 +105,21 @@ def delete_zaposleni(JMBG):
 
     return jsonify({'poruka':f'Zaposleni <{ime} {prezime}> obrisan!'})
 
+@app.route('/zaposleni/promote/<JMBG>', methods=['PUT'])
+def promote_zaposleni(JMBG):
+    zaposleni = Zaposleni.query.filter_by(JMBG=JMBG).first()
+
+    ime = zaposleni.ime
+    prezime = zaposleni.prezime
+
+    if not zaposleni:
+        return jsonify({'poruka':'Zaposleni nije pronadjen!'}), 409
+    
+    zaposleni.admin = request.get_json()['admin']
+    db.session.commit()
+
+    return jsonify({'poruka':f'Zaposlenom <{ime} {prezime}> promenjen pristup!'})
+
 @app.route('/korisnik', methods=['GET'])
 def get_all_korisnici():
     lista_korisnika = Korisnik.query.all()
