@@ -1,11 +1,32 @@
-from flask import request, jsonify
+from flask import request, jsonify, make_response
 from sc_server import app, db
 from sc_server.models import (Sastojak, Zaposleni, Korisnik,
     Proizvod, Sastojci_Proizvoda, Racun, Stavke_Racuna)
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
+import jwt
+import datetime
+from functools import wraps
+
+def token_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.args.get('token')
+
+        if not token:
+            return jsonify({"message":"Token fali!"}), 401
+        
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+        except:
+            return jsonify({"message":"Token je neispravan!"}), 401
+
+        return f(*args, **kwargs)
+    
+    return decorated_function
 
 @app.route('/sastojak', methods=['GET'])
+@token_required
 def get_all_sastojci():
     lista_sastojaka = Sastojak.query.all()
     sastojci = []
@@ -19,6 +40,7 @@ def get_all_sastojci():
     return jsonify({'sastojci':sastojci})
 
 @app.route('/sastojak', methods=['POST'])
+@token_required
 def create_sastojak():
     data = request.get_json()
     s_naziv = data['naziv']
@@ -38,6 +60,7 @@ def create_sastojak():
     return jsonify({'poruka':f'Sastojak <{s_naziv}> uspesno kreiran!'})
 
 @app.route('/sastojak/<naziv>', methods=['DELETE'])
+@token_required
 def delete_sastojak(naziv):
     sastojak = Sastojak.query.filter_by(naziv=naziv).first()
 
@@ -52,6 +75,7 @@ def delete_sastojak(naziv):
     return jsonify({'poruka':f'Sastojak <{naziv}> obrisan!'})
 
 @app.route('/zaposleni', methods=['GET'])
+@token_required
 def get_all_zaposleni():
     lista_zaposlenih = Zaposleni.query.all()
     zaposleni_to_send = []
@@ -67,6 +91,7 @@ def get_all_zaposleni():
     return jsonify({'zaposleni':zaposleni_to_send})
 
 @app.route('/zaposleni', methods=['POST'])
+@token_required
 def create_zaposleni():
     data = request.get_json()
     z_ime = data['ime']
@@ -95,6 +120,7 @@ def create_zaposleni():
     return jsonify({'poruka':f'Zaposleni <{z_ime} {z_prezime}> uspesno kreiran!'})
 
 @app.route('/zaposleni/<JMBG>', methods=['DELETE'])
+@token_required
 def delete_zaposleni(JMBG):
     zaposleni = Zaposleni.query.filter_by(JMBG=JMBG).first()
 
@@ -110,6 +136,7 @@ def delete_zaposleni(JMBG):
     return jsonify({'poruka':f'Zaposleni <{ime} {prezime}> obrisan!'})
 
 @app.route('/zaposleni/promote/<JMBG>', methods=['PUT'])
+@token_required
 def promote_zaposleni(JMBG):
     zaposleni = Zaposleni.query.filter_by(JMBG=JMBG).first()
 
@@ -125,6 +152,7 @@ def promote_zaposleni(JMBG):
     return jsonify({'poruka':f'Zaposlenom <{ime} {prezime}> promenjen pristup!'})
 
 @app.route('/korisnik', methods=['GET'])
+@token_required
 def get_all_korisnici():
     lista_korisnika = Korisnik.query.all()
     korisnici = []
@@ -137,6 +165,7 @@ def get_all_korisnici():
     return jsonify({'korisnici':korisnici})
 
 @app.route('/korisnik', methods=['POST'])
+@token_required
 def create_korisnik():
     data = request.get_json()
     k_email = data['email']
@@ -157,6 +186,7 @@ def create_korisnik():
     return jsonify({'poruka':f'Korisnik <{k_email}> uspesno kreiran!'})
 
 @app.route('/korisnik/<email>', methods=['DELETE'])
+@token_required
 def delete_korisnik(email):
     korisnik = Korisnik.query.filter_by(email=email).first()
 
@@ -171,6 +201,7 @@ def delete_korisnik(email):
     return jsonify({'poruka':f'Korisnik <{email}> obrisan!'})
 
 @app.route('/proizvod', methods=['GET'])
+@token_required
 def get_all_proizvodi():
     lista_proizvoda = Proizvod.query.all()
     proizvodi = []
@@ -196,6 +227,7 @@ def get_all_proizvodi():
     return jsonify({'proizvodi':proizvodi})
 
 @app.route('/proizvod', methods=['POST'])
+@token_required
 def create_proizod():
     data = request.get_json()
     p_naziv = data['naziv']
@@ -218,6 +250,7 @@ def create_proizod():
     
 
 @app.route('/proizvod/<naziv>', methods=['DELETE'])
+@token_required
 def delete_proizvod(naziv):
     proizvod = Proizvod.query.filter_by(naziv=naziv).first()
 
@@ -234,6 +267,7 @@ def delete_proizvod(naziv):
     return jsonify({'poruka':f'Proizvod <{naziv}> obrisan!'})
 
 @app.route('/racun', methods=['GET'])
+@token_required
 def get_all_racuni():
     lista_racuna = Racun.query.all()
     racuni = []
@@ -260,6 +294,7 @@ def get_all_racuni():
     return jsonify({'racuni':racuni})
 
 @app.route('/racun', methods=['POST'])
+@token_required
 def create_racun():
     data = request.get_json()
     r_sto = data['sto']
@@ -281,6 +316,7 @@ def create_racun():
     return jsonify({'poruka':f'Racun uspesno kreiran!'})
 
 @app.route('/racun/<public_id>', methods=['DELETE'])
+@token_required
 def delete_racun(public_id):
     racun = Racun.query.filter_by(public_id=public_id).first()
 
@@ -293,3 +329,21 @@ def delete_racun(public_id):
     db.session.commit()
 
     return jsonify({'poruka':f'Racun obrisan!'})
+
+@app.route('/obtain_token')
+def obtain_token():
+    auth = request.authorization
+
+    if not auth or not auth.username or not auth.password:
+        return make_response('Neuspesna verifikacija', 401, {'WWW-Authenticate' : 'Basic realm="Login required!"'})
+
+    zaposleni = Zaposleni.query.filter_by(JMBG=auth.username).first()
+
+    if not zaposleni:
+        return make_response('Neuspesna verifikacija', 401, {'WWW-Authenticate' : 'Basic realm="Login required!"'})
+
+    if check_password_hash(zaposleni.lozinka, auth.password) and zaposleni.admin:
+        token = jwt.encode({'JMBG':auth.username, 'exp':datetime.datetime.utcnow() + datetime.timedelta(hours=8)}, app.config['SECRET_KEY'])
+        return jsonify({'token':token.decode('UTF-8')})
+
+    return make_response('Neuspesna verifikacija', 401, {'WWW-Authenticate' : 'Basic realm="Login required!"'})
